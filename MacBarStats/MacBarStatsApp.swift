@@ -14,7 +14,7 @@ struct MacBarStatsApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Settings {
+        SwiftUI.Settings {
             SettingsView()
                 .environmentObject(state)
         }

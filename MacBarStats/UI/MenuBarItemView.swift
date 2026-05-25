@@ -14,12 +14,11 @@ struct MenuBarItemView: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: leadingSymbol)
-            ForEach(enabledStats, id: \.id) { config in
-                statView(for: config.stat)
-            }
             if enabledStats.isEmpty {
                 Text("—")
                     .foregroundStyle(.secondary)
+            } else {
+                statsText
             }
         }
         .font(.system(size: 12))
@@ -30,22 +29,23 @@ struct MenuBarItemView: View {
         state.settings.menuBarStats.filter(\.enabled)
     }
 
-    /// The lead symbol gives the menu bar a recognizable shape regardless of
-    /// which stats are enabled.
     private var leadingSymbol: String {
         enabledStats.first?.stat.symbol ?? "thermometer"
     }
 
-    @ViewBuilder
-    private func statView(for stat: StatID) -> some View {
-        if let snap = state.sampler.current, let value = snap.value(for: stat) {
-            let evaluated = state.settings.thresholds.evaluate(stat, value: value)
-            Text(stat.format(value))
-                .foregroundStyle(color(for: evaluated))
-        } else {
-            Text("—")
-                .foregroundStyle(.secondary)
+    private var statsText: Text {
+        guard let snap = state.sampler.current else {
+            return Text("—").foregroundStyle(.secondary)
         }
+        var result: Text?
+        for config in enabledStats {
+            guard let value = snap.value(for: config.stat) else { continue }
+            let evaluated = state.settings.thresholds.evaluate(config.stat, value: value)
+            let segment = Text(config.stat.format(value))
+                .foregroundStyle(color(for: evaluated))
+            result = result.map { $0 + Text("  ") + segment } ?? segment
+        }
+        return result ?? Text("—").foregroundStyle(.secondary)
     }
 
     private func color(for state: ThresholdState) -> Color {

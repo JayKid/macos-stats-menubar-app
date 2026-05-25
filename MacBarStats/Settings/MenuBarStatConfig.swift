@@ -73,9 +73,9 @@ struct MenuBarStatConfig: Identifiable, Codable, Hashable {
 
 extension Array where Element == MenuBarStatConfig {
     static var defaults: [MenuBarStatConfig] {
-        // CPU Perf temp enabled by default; everything else available but off.
+        // CPU usage always works (public API).
         StatID.allCases.map { id in
-            MenuBarStatConfig(stat: id, enabled: id == .cpuPerfTemp)
+            MenuBarStatConfig(stat: id, enabled: id == .cpuUsage)
         }
     }
 }

@@ -23,9 +23,6 @@ struct Thresholds: Codable, Hashable {
 
     static let `default`: Thresholds = .init(byStat: [
         // Temperature defaults from SPEC §8.
-        .cpuPerfTemp: .init(warn: 85, critical: 95),
-        .cpuEffTemp:  .init(warn: 85, critical: 95),
-        .gpuTemp:     .init(warn: 85, critical: 95),
         .socTemp:     .init(warn: 85, critical: 95),
         // Battery low (lower-is-worse — handled inversely below).
         .batteryCharge: .init(warn: 20, critical: 10),

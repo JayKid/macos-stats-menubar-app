@@ -3,9 +3,6 @@ import Foundation
 /// Every thing the menu bar (or popup) can display as a single value. This
 /// is also the key used for thresholds and the menu-bar reorder list.
 enum StatID: String, Codable, Hashable, CaseIterable, Identifiable {
-    case cpuPerfTemp   = "cpu_perf_temp"
-    case cpuEffTemp    = "cpu_eff_temp"
-    case gpuTemp       = "gpu_temp"
     case socTemp       = "soc_temp"
     case batteryTemp   = "battery_temp"
     case nandTemp      = "nand_temp"
@@ -20,9 +17,6 @@ enum StatID: String, Codable, Hashable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .cpuPerfTemp:   return "CPU Perf temp"
-        case .cpuEffTemp:    return "CPU Eff temp"
-        case .gpuTemp:       return "GPU temp"
         case .socTemp:       return "SoC temp"
         case .batteryTemp:   return "Battery temp"
         case .nandTemp:      return "NAND temp"
@@ -37,13 +31,13 @@ enum StatID: String, Codable, Hashable, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
-        case .cpuPerfTemp, .cpuEffTemp, .cpuUsage: return "cpu"
-        case .gpuTemp, .gpuUsage:                  return "display"
-        case .socTemp:                             return "memorychip"
-        case .batteryTemp, .batteryCharge:         return "battery.100"
-        case .nandTemp:                            return "internaldrive"
-        case .ambientTemp:                         return "thermometer"
-        case .fan0, .fan1:                         return "fan"
+        case .cpuUsage:      return "cpu"
+        case .gpuUsage:      return "display"
+        case .socTemp:       return "memorychip"
+        case .batteryTemp, .batteryCharge: return "battery.100"
+        case .nandTemp:      return "internaldrive"
+        case .ambientTemp:   return "thermometer"
+        case .fan0, .fan1:   return "fan"
         }
     }
 

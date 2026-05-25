@@ -4,8 +4,7 @@ struct ThresholdsTab: View {
     @EnvironmentObject var state: AppState
 
     private let rows: [StatID] = [
-        .cpuPerfTemp, .cpuEffTemp, .gpuTemp, .socTemp,
-        .batteryTemp, .nandTemp, .ambientTemp,
+        .socTemp, .batteryTemp, .nandTemp, .ambientTemp,
         .cpuUsage, .gpuUsage, .batteryCharge,
         .fan0, .fan1,
     ]

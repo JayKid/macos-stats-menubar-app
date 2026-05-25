@@ -50,9 +50,6 @@ struct TemperaturesSection: View {
     private func rows(for snap: Snapshot) -> [Row] {
         let series = state.sampler.history.toArray()
         let categories: [(TempCategory, StatID)] = [
-            (.cpuPerf, .cpuPerfTemp),
-            (.cpuEff,  .cpuEffTemp),
-            (.gpu,     .gpuTemp),
             (.soc,     .socTemp),
             (.battery, .batteryTemp),
             (.nand,    .nandTemp),

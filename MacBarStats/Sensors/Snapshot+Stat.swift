@@ -7,9 +7,6 @@ extension Snapshot {
     /// MacBook Pro with only one fan).
     func value(for stat: StatID) -> Double? {
         switch stat {
-        case .cpuPerfTemp:    return tempMax(in: .cpuPerf)
-        case .cpuEffTemp:     return tempMax(in: .cpuEff)
-        case .gpuTemp:        return tempMax(in: .gpu)
         case .socTemp:        return tempMax(in: .soc)
         case .batteryTemp:    return tempMax(in: .battery)
         case .nandTemp:       return tempMax(in: .nand)

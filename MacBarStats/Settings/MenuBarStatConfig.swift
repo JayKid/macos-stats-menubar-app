@@ -6,7 +6,6 @@ enum StatID: String, Codable, Hashable, CaseIterable, Identifiable {
     case socTemp       = "soc_temp"
     case batteryTemp   = "battery_temp"
     case nandTemp      = "nand_temp"
-    case ambientTemp   = "ambient_temp"
     case fan0          = "fan_0"
     case fan1          = "fan_1"
     case cpuUsage      = "cpu_usage"
@@ -20,7 +19,6 @@ enum StatID: String, Codable, Hashable, CaseIterable, Identifiable {
         case .socTemp:       return "SoC temp"
         case .batteryTemp:   return "Battery temp"
         case .nandTemp:      return "NAND temp"
-        case .ambientTemp:   return "Ambient temp"
         case .fan0:          return "Fan 1"
         case .fan1:          return "Fan 2"
         case .cpuUsage:      return "CPU %"
@@ -36,7 +34,6 @@ enum StatID: String, Codable, Hashable, CaseIterable, Identifiable {
         case .socTemp:       return "memorychip"
         case .batteryTemp, .batteryCharge: return "battery.100"
         case .nandTemp:      return "internaldrive"
-        case .ambientTemp:   return "thermometer"
         case .fan0, .fan1:   return "fan"
         }
     }

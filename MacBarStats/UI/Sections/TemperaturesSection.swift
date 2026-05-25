@@ -53,7 +53,6 @@ struct TemperaturesSection: View {
             (.soc,     .socTemp),
             (.battery, .batteryTemp),
             (.nand,    .nandTemp),
-            (.ambient, .ambientTemp),
         ]
         return categories.compactMap { (cat, stat) in
             guard let v = snap.value(for: stat) else { return nil }

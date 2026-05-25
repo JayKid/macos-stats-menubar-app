@@ -47,8 +47,15 @@ final class Settings: ObservableObject {
 
         self.didOnboardLoginItem = defaults.bool(forKey: K.didOnboard)
 
+        // For menuBarStats and thresholds we use lossy decoding: if the
+        // persisted JSON contains entries for an obsolete StatID (e.g., a
+        // category we removed in a later version), strict Codable would
+        // fail the whole decode and reset the user's config to defaults.
+        // Lossy decoding parses the JSON manually and skips unknown
+        // entries, so the user keeps the rest of their preferences.
+
         if let data = defaults.data(forKey: K.menuBar),
-           let decoded = try? JSONDecoder().decode([MenuBarStatConfig].self, from: data),
+           let decoded = Self.decodeMenuBarStatsLossily(data: data),
            !decoded.isEmpty {
             // Merge in any new StatIDs that didn't exist when the user last saved.
             var merged = decoded
@@ -62,11 +69,45 @@ final class Settings: ObservableObject {
         }
 
         if let data = defaults.data(forKey: K.thresholds),
-           let decoded = try? JSONDecoder().decode(Thresholds.self, from: data) {
+           let decoded = Self.decodeThresholdsLossily(data: data) {
             self.thresholds = decoded
         } else {
             self.thresholds = .default
         }
+    }
+
+    // MARK: - Lossy decoders
+
+    private static func decodeMenuBarStatsLossily(data: Data) -> [MenuBarStatConfig]? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            return nil
+        }
+        var result: [MenuBarStatConfig] = []
+        for entry in json {
+            guard let rawStat = entry["stat"] as? String,
+                  let stat = StatID(rawValue: rawStat),
+                  let enabled = entry["enabled"] as? Bool else {
+                continue // drop entries whose `stat` we no longer recognize
+            }
+            result.append(MenuBarStatConfig(stat: stat, enabled: enabled))
+        }
+        return result
+    }
+
+    private static func decodeThresholdsLossily(data: Data) -> Thresholds? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let byStatJSON = json["byStat"] as? [String: [String: Any]] else {
+            return nil
+        }
+        var byStat: [StatID: ThresholdPair] = [:]
+        for (rawStat, pair) in byStatJSON {
+            guard let stat = StatID(rawValue: rawStat) else { continue }
+            byStat[stat] = ThresholdPair(
+                warn: pair["warn"] as? Double,
+                critical: pair["critical"] as? Double
+            )
+        }
+        return Thresholds(byStat: byStat)
     }
 
     // MARK: - Clamping

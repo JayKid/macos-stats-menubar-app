@@ -10,7 +10,6 @@ extension Snapshot {
         case .socTemp:        return tempMax(in: .soc)
         case .batteryTemp:    return tempMax(in: .battery)
         case .nandTemp:       return tempMax(in: .nand)
-        case .ambientTemp:    return tempMax(in: .ambient)
         case .fan0:           return fans.first(where: { $0.id == 0 })?.actualRPM
         case .fan1:           return fans.first(where: { $0.id == 1 })?.actualRPM
         case .cpuUsage:       return cpu.aggregate * 100

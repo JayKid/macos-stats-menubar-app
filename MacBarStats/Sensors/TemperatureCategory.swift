@@ -15,7 +15,6 @@ enum TempCategory: String, CaseIterable, Codable, Sendable, Identifiable {
     case soc      = "SoC die"
     case battery  = "Battery"
     case nand     = "NAND"
-    case ambient  = "Ambient"
 
     var id: String { rawValue }
 
@@ -25,7 +24,6 @@ enum TempCategory: String, CaseIterable, Codable, Sendable, Identifiable {
         case .soc:     return "memorychip"
         case .battery: return "battery.100"
         case .nand:    return "internaldrive"
-        case .ambient: return "thermometer"
         }
     }
 }
@@ -42,10 +40,6 @@ enum TemperatureCategorizer {
 
         if lower.contains("nand") {
             return .nand
-        }
-
-        if lower.contains("ambient") || lower.contains("airflow") {
-            return .ambient
         }
 
         // PMU sensors named `tdie*` / `tdev*` / `tcal` are SoC die thermistors.

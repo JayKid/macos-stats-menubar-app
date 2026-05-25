@@ -1,0 +1,8 @@
+MacBarStats.xcodeproj/
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+.swiftpm/
+*.swp
+.DS_Store

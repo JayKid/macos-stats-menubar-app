@@ -1,20 +1,38 @@
 import Foundation
 
-/// GPU "busy %" derived from the `IOReport` `PWRCTRL` state channel in the
-/// `GPU Stats` group (subgroup `GPU Power Controller States`).
+/// GPU "busy %" derived from IOReport state channels in the `"GPU Stats"`
+/// group.
 ///
-/// Caveat — this is **power-state residency**, not compute load. The GPU
-/// stays in the `PERF` state to drive the display compositor even on an
-/// otherwise idle system, so the baseline reads 50–70 % when nothing is
-/// happening. The value DOES respond to real workloads (drops further
-/// toward zero when display sleeps; pegs near 100 % under sustained Metal
-/// load). A future revision can swap in `IORegistry → AGXAccelerator →
-/// PerformanceStatistics` for an actual compute-load metric.
+/// We try two channels in order of community preference:
+///
+/// 1. `GPUPH` in subgroup `"GPU Performance States"` — the channel macmon /
+///    btop / mactop all use. P-state residency by frequency bucket. Present
+///    on most M1/M2/M3/M4 Macs.
+/// 2. `PWRCTRL` in subgroup `"GPU Power Controller States"` — older path,
+///    still surfaced on Apple Silicon. Used when GPUPH isn't subscribable
+///    (the dev MacBook Pro this app was written on falls into this case).
+///
+/// The set of "idle" state names varies by SoC generation: macOS uses
+/// `IDLE_OFF` on some Macs, `OFF` on M4-class chips, `IDLE`/`DOWN` on
+/// M2/M3 Max. We match any of `{OFF, IDLE, IDLE_OFF, DOWN, SW_OFF}`
+/// case-insensitively so a future SoC rename doesn't silently zero out the
+/// reading.
+///
+/// **Important caveat about the number itself.** macmon and similar tools
+/// derive a frequency-weighted busy ratio (residency × per-state frequency,
+/// normalized to the max frequency) because macOS parks the GPU at P1 for
+/// display compositing 40–60 % of the time — so plain
+/// `1 - idle/total` overestimates by ~3–5× on most Macs. We use the plain
+/// form for v1 simplicity; expect baseline values of 50–70 % when the
+/// system is "idle." Switching to frequency-weighting (or using
+/// `IORegistry → AGXAccelerator → PerformanceStatistics["Device Utilization %"]`,
+/// which is what exelban/stats reads) is the obvious next step if numbers
+/// feel off.
 ///
 /// Initialization fails (returns `nil`) if `libIOReport.dylib` can't be
-/// loaded or the symbols/channel can't be resolved. The Sampler treats a
-/// `nil` source as "GPU section disabled," which is exactly what we want
-/// on a Mac where IOReport drifts (e.g., a new SoC generation).
+/// loaded or no channels in the group can be subscribed. The Sampler
+/// treats a `nil` source as "GPU section disabled," which is exactly what
+/// we want on a Mac where IOReport drifts.
 final class GPUUsageSource {
 
     private let ior: IORBindings
@@ -55,26 +73,51 @@ final class GPUUsageSource {
         }
         let delta = deltaRef.takeRetainedValue()
 
-        var total: Int64 = 0
-        var idle: Int64 = 0
+        // Collect residency from BOTH known channels in one iteration pass,
+        // then prefer GPUPH (community-standard) if it produced data, else
+        // fall back to PWRCTRL.
+        var gpuphTotal: Int64 = 0,   gpuphIdle: Int64 = 0
+        var pwrctrlTotal: Int64 = 0, pwrctrlIdle: Int64 = 0
+
         ior.iterate(delta, { ch in
-            guard cfStr(ior.getChannelName(ch)) == "PWRCTRL" else { return 0 }
-            guard ior.getFormat(ch) == 2 else { return 0 }
+            guard ior.getFormat(ch) == 2 else { return 0 } // state channels only
+            let name = cfStr(ior.getChannelName(ch))
+            guard name == "GPUPH" || name == "PWRCTRL" else { return 0 }
+
             let count = ior.stateCount(ch)
             guard count > 0 else { return 0 }
             for i in 0..<count {
-                let n = cfStr(ior.stateName(ch, i))
+                let state = cfStr(ior.stateName(ch, i)).uppercased()
                 let r = ior.stateRes(ch, i)
-                total &+= r
-                if n == "IDLE_OFF" { idle &+= r }
+                let isIdle = Self.idleStateNames.contains(state)
+                if name == "GPUPH" {
+                    gpuphTotal &+= r
+                    if isIdle { gpuphIdle &+= r }
+                } else {
+                    pwrctrlTotal &+= r
+                    if isIdle { pwrctrlIdle &+= r }
+                }
             }
             return 0
         })
 
+        let (total, idle) = gpuphTotal > 0
+            ? (gpuphTotal, gpuphIdle)
+            : (pwrctrlTotal, pwrctrlIdle)
         guard total > 0 else { return GPUReading(busy: 0) }
         let busy = 1 - Double(idle) / Double(total)
         return GPUReading(busy: max(0, min(1, busy)))
     }
+
+    /// Idle state names observed across Apple Silicon generations:
+    /// - `IDLE_OFF` — PWRCTRL on the dev MacBook Pro (M-series)
+    /// - `OFF`     — M4-class chips (per shm11C3 tests)
+    /// - `IDLE` / `DOWN` — M2 / M3 Max (per macmon's calc_freq comment)
+    /// - `SW_OFF`  — appears in some Apple registry filters alongside IDLE_OFF
+    /// Match case-insensitively — uppercased here for the `.contains` check.
+    private static let idleStateNames: Set<String> = [
+        "OFF", "IDLE", "IDLE_OFF", "DOWN", "SW_OFF"
+    ]
 }
 
 // MARK: - dlsym bindings (private framework / public symbols)
